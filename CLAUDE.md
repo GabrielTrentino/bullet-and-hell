@@ -1,41 +1,44 @@
 # CLAUDE.md
 
-Jogo estilo Vampire Survivors: o jogador se move com WASD ou setas, as armas disparam automaticamente, inimigos chegam em ondas cada vez maiores, e as gemas de XP dão subidas de nível.
+Bullet & Hell é um jogo de sobrevivência no estilo Vampire Survivors, em JavaScript puro (ES modules) e canvas 2D. Não há dependências, build nem arquivos de arte: sprites, ícones, cenário e áudio são gerados por código.
 
 ## Como rodar
 
-Não há build. Abra `index.html` com um servidor estático, por exemplo:
+Sirva a raiz com um servidor estático (`python -m http.server 8000`, `npx serve .` ou Live Server) e abra `index.html`. Módulos ES não carregam via `file://`.
 
-```
-python3 -m http.server 8000
-```
-
-e acesse http://localhost:8000. Módulos ES não funcionam com `file://` em alguns navegadores, então use o servidor.
+No console do navegador, `window.__game` expõe a instância do jogo para depuração. Por exemplo: `__game.startRun('kael')` ou `__game.player.addXp(500)`.
 
 ## Estrutura
 
-- `index.html`: página e canvas.
-- `src/main.js`: loop principal (requestAnimationFrame e delta time).
-- `src/game.js`: estado do jogo, spawns, colisões e renderização.
-- `src/player.js`: jogador, vida, XP e níveis.
-- `src/enemies.js`: tipos de inimigo (tabela `ENEMY_TYPES`) e spawn.
-- `src/weapons.js`: armas como dados (`WEAPON_DEFS`) e comportamentos de disparo.
-- `src/xp.js`: gemas de experiência.
-- `src/hud.js`: interface.
-- `src/input.js`: teclado.
-- `src/utils.js`: funções auxiliares.
+```
+index.html            página, fontes (Cinzel, Rubik) e canvas
+src/main.js           espera as fontes e roda o loop (requestAnimationFrame)
+src/game.js           estado central: partida, câmera, combate, renderização do mundo
+src/core/             utils (matemática, grade espacial), input (teclado/mouse/toque), audio (Web Audio), save (localStorage)
+src/data/             TODO o conteúdo ajustável: heróis, armas, passivas, inimigos, ondas/eventos, loja
+src/entities/         Player (atributos, XP, dano) e Enemy
+src/systems/          weapons (comportamento de cada arma), projectiles (movimento e colisão),
+                      ai (inimigos e chefes), spawner (ondas e eventos), upgrades (escolhas e baús), pickups
+src/render/           sprites (desenho procedural e cache), icons, background, effects (partículas, textos, raios)
+src/ui/ui.js          menus, HUD e telas (título, heróis, santuário, nível, baú, pausa, fim)
+```
+
+## Como estender
+
+- **Novo inimigo:** adicione em `data/enemies.js` e desenhe em `ENEMY_ART` (`render/sprites.js`), olhando para a direita. Para outro comportamento, crie um `ai` em `systems/ai.js`. Depois inclua o inimigo em `pool` de alguma onda em `data/waves.js`.
+- **Nova arma:** adicione os dados em `data/weapons.js` (base, `levels` com 7 incrementos e `evolution`), o comportamento em `BEHAVIORS` de `systems/weapons.js` e o ícone em `render/icons.js`.
+- **Nova passiva:** adicione em `data/passives.js` (o `stat` deve existir em `BASE_STATS`, em `entities/player.js`) e um ícone com o mesmo id.
+- **Novo herói:** adicione em `data/characters.js` e a aparência em `HERO_LOOKS` (`render/sprites.js`).
 
 ## Convenções
 
-- JavaScript ES modules, sem dependências externas por enquanto.
-- Novos inimigos e armas entram como entradas nas tabelas `ENEMY_TYPES` e `WEAPON_DEFS`, sem alterar a lógica geral.
-- Tempo sempre em segundos, usando `dt` do loop. Nada de contagem por frame.
-- Coordenadas do mundo ficam em `x`/`y`. A câmera é aplicada com `translate` no render.
-- Comentários e nomes de domínio em português; nomes técnicos (`update`, `render`) em inglês.
+- Tempo sempre em segundos via `dt`, nunca contagem de frames. Ações atrasadas usam `G.schedule(delay, fn)`.
+- Coordenadas de mundo em `x/y`. Desenhe com `G.blit(sprite, x, y, escala, espelhar, alfa, rotação)` ou chame `G.setWorld()` antes de primitivas.
+- Brilhos usam `glow(cor)` (raio base 32) com `globalCompositeOperation = 'lighter'`. Sempre volte para `'source-over'`.
+- Colisões contra inimigos passam pela grade espacial: `G.queryEnemies(x, y, r)`.
+- A UI é em modo imediato: `ui.button(...)` desenha e retorna `true` quando ativado (clique, toque ou Enter).
+- Texto do jogo em português; nomes técnicos (`update`, `render`, `fire`) em inglês.
 
-## Próximos passos sugeridos
+## Equilíbrio
 
-1. Tela de escolha de melhorias ao subir de nível (estado `levelup` já existe).
-2. Mais armas com níveis (ex.: faca, bola de fogo, área ao redor).
-3. Mapa infinito com fundo em tiles e sprites reais.
-4. Sons e efeitos visuais de dano.
+Os números ficam nos arquivos de `data/`. A vida dos inimigos escala com o tempo em `Spawner.hpMult()`, e a curva de experiência fica em `xpForLevel()`. Os chefes aparecem aos 4, 8, 11 e 13 minutos, e o Rei Lich aos 15. Derrotá-lo encerra a partida com vitória.
