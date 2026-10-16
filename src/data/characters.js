@@ -27,7 +27,7 @@ export const CHARACTERS = [
   },
   {
     id: 'volt', name: 'Volt', title: 'O Tempestuoso', weapon: 'lightning', cost: 1000,
-    desc: '+1 projétil em todas as armas e +8% de crítico, mas tem 20 de vida a menos.',
-    stats: { amount: 1, luck: 0.08, maxHp: -20 },
+    desc: '+1 projétil em todas as armas e +8% de crítico, mas tem 10 de vida a menos.',
+    stats: { amount: 1, luck: 0.08, maxHp: -10 },
   },
 ];
